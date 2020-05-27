@@ -1,21 +1,30 @@
+#!/bin/bash
+
 PROGNAME="${0##*/}"
 
 usage() {
-  echo "$PROGNAME: usage: $PROGNAME KEY_PATH"
+  echo -e "usage: $PROGNAME DIRECTORY..." >&2
+  exit 1
 }
 
-if [[ "$#" -ne 1 ]]; then
-  usage
-  exit 1
-fi
+[[ "$#" -eq 0 ]] && usage
 
-KEY_PATH=${1%/}
+generate() {
+  openssl genrsa \
+    -out "$1/private.key" 2048
 
-openssl genrsa \
-  -out "$KEY_PATH/private.key" 2048
+  openssl rsa \
+    -in "$1/private.key" \
+    -outform PEM \
+    -pubout \
+    -out "$1/public.pem"
+}
 
-openssl rsa \
-  -in "$KEY_PATH/private.key" \
-  -outform PEM \
-  -pubout \
-  -out "$KEY_PATH/public.pem"
+while [[ "$#" > 0 ]]; do
+  if [[ -d "$1" ]]; then
+    generate $1
+  else
+    echo "invalid directory $(realpath $1)"
+  fi
+  shift
+done
